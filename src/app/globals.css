@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@config "../../tailwind.config.ts";
 
 :root {
   --background: #f9fafb;
@@ -10,12 +11,12 @@
 }
 
 .dark {
-  --background: #27272a;
-  /* zinc-800 - "not too dark" */
-  --foreground: #f4f4f5;
-  /* zinc-100 */
-  --dot-color: #3f3f46;
-  /* zinc-700 */
+  --background: #09090b;
+  /* zinc-950 - "Antigravity Dark" */
+  --foreground: #fafafa;
+  /* zinc-50 */
+  --dot-color: #27272a;
+  /* zinc-800 */
 }
 
 @theme inline {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { PanelLeftClose, PanelLeftOpen, LogOut, MessageSquare, Network, Sun, Moon, User as UserIcon, Plus } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, LogOut, MessageSquare, Network, Sun, Moon, User as UserIcon, Plus, LayoutGrid, List } from 'lucide-react'
 import { signout } from '@/app/auth/actions'
 import Link from 'next/link'
 import { User } from '@supabase/supabase-js'
@@ -9,12 +9,15 @@ import { User } from '@supabase/supabase-js'
 interface DashboardLayoutProps {
     user: User
     children: React.ReactNode
+    sessions?: any[]
 }
 
-export function DashboardLayout({ user, children }: DashboardLayoutProps) {
+export function DashboardLayout({ user, children, sessions = [] }: DashboardLayoutProps) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
     const [viewMode, setViewMode] = useState<'chat' | 'mindmap'>('chat')
+    const [layoutMode, setLayoutMode] = useState<'list' | 'grid'>('list')
     const [isDarkMode, setIsDarkMode] = useState(false)
+    const [isSubChatOpen, setIsSubChatOpen] = useState(false)
 
     // Initialize theme
     useEffect(() => {
@@ -51,27 +54,89 @@ export function DashboardLayout({ user, children }: DashboardLayoutProps) {
             {/* Sidebar */}
             <aside
                 className={`${isSidebarOpen ? 'w-[280px]' : 'w-0'
-                    } flex-shrink-0 bg-gray-50/80 dark:bg-black/40 backdrop-blur-xl border-r border-gray-200/50 dark:border-white/5 transition-all duration-300 ease-in-out flex flex-col overflow-hidden relative z-20`}
+                    } flex-shrink-0 bg-gray-50/80 dark:bg-zinc-900/80 backdrop-blur-xl border-r border-gray-200/50 dark:border-white/5 transition-all duration-300 ease-in-out flex flex-col overflow-hidden relative z-20`}
             >
-                {/* Sidebar Header (New Chat) */}
-                <div className="p-4">
-                    <button className="flex items-center gap-3 w-full px-4 py-3 rounded-full bg-white dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 border border-gray-200/50 dark:border-transparent transition-all shadow-sm group">
+                {/* Sidebar Header (New Chat & Sub Chat) */}
+                <div className="p-4 flex gap-2">
+                    <button className="flex-1 flex items-center gap-3 px-4 py-3 rounded-full bg-white dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 border border-gray-200/50 dark:border-transparent transition-all shadow-sm group">
                         <Plus className="w-5 h-5 text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white" />
-                        <span className="font-medium">New chat</span>
-                        <span className="ml-auto text-xs text-gray-400">⌘N</span>
+                        <span className="font-medium text-sm">New chat</span>
+                    </button>
+                    <button
+                        onClick={() => setIsSubChatOpen(!isSubChatOpen)}
+                        className={`p-3 rounded-full border border-gray-200/50 dark:border-transparent transition-all shadow-sm group ${isSubChatOpen ? 'bg-blue-50 dark:bg-blue-500/20 text-blue-600 dark:text-blue-300' : 'bg-white dark:bg-white/5 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                        title="Toggle Sub Chat"
+                    >
+                        <MessageSquare className="w-5 h-5" />
                     </button>
                 </div>
 
                 {/* Sidebar Content (Scrollable) */}
                 <div className="flex-1 overflow-y-auto px-3 py-2">
-                    <div className="text-xs font-medium text-gray-400 px-3 py-2">Recent</div>
-                    {/* Placeholder for list items */}
-                    <div className="space-y-1">
-                        {[1, 2, 3].map((i) => (
-                            <button key={i} className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:hover:bg-white/5 rounded-xl truncate transition-colors">
-                                Project Meeting Notes {i}
+                    <div className="flex items-center justify-between px-3 py-2 mb-1">
+                        <div className="text-xs font-medium text-gray-400">Recent</div>
+                        <div className="flex items-center gap-1 bg-gray-100 dark:bg-white/5 p-0.5 rounded-lg">
+                            <button
+                                onClick={() => setLayoutMode('list')}
+                                className={`p-1 rounded-md transition-all ${layoutMode === 'list' ? 'bg-white dark:bg-white/10 shadow-sm text-gray-900 dark:text-white' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
+                            >
+                                <List className="w-3.5 h-3.5" />
                             </button>
-                        ))}
+                            <button
+                                onClick={() => setLayoutMode('grid')}
+                                className={`p-1 rounded-md transition-all ${layoutMode === 'grid' ? 'bg-white dark:bg-white/10 shadow-sm text-gray-900 dark:text-white' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
+                            >
+                                <LayoutGrid className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Items List */}
+                    <div className={layoutMode === 'grid' ? 'grid grid-cols-2 gap-2' : 'space-y-0.5'}>
+                        {sessions.length === 0 ? (
+                            <div className="p-4 text-center text-xs text-gray-400">
+                                No sessions yet.
+                            </div>
+                        ) : (
+                            sessions.map((session, i) => (
+                                <Link
+                                    key={session.id}
+                                    href={`/session/${session.id}`}
+                                    className={`
+                                        block group w-full text-left transition-all duration-200
+                                        ${layoutMode === 'grid'
+                                            ? 'aspect-square p-3 flex flex-col justify-between bg-white dark:bg-white/5 border border-gray-200/50 dark:border-white/5 rounded-2xl hover:border-gray-300 dark:hover:border-white/20 hover:shadow-md'
+                                            : 'px-3 py-3 border-b border-gray-100/50 dark:border-white/5 last:border-0 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg'
+                                        }
+                                    `}
+                                >
+                                    {layoutMode === 'grid' ? (
+                                        <>
+                                            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-xs font-medium text-gray-500">
+                                                {session.title.substring(0, 1).toUpperCase()}
+                                            </div>
+                                            <div className="space-y-1">
+                                                <div className="font-medium text-xs text-gray-900 dark:text-gray-200 line-clamp-2 leading-relaxed">
+                                                    {session.title}
+                                                </div>
+                                                <div className="text-[10px] text-gray-400">
+                                                    {new Date(session.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{session.title}</span>
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {new Date(session.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </Link>
+                            ))
+                        )}
                     </div>
                 </div>
 
@@ -112,7 +177,7 @@ export function DashboardLayout({ user, children }: DashboardLayoutProps) {
                         </button>
 
                         {/* Model/View Switcher (Center-ish / Left-aligned) */}
-                        <div className="hidden md:flex items-center gap-1 text-lg font-medium text-gray-400 select-none">
+                        <div className="hidden md:flex items-center gap-1 text-lg font-bold text-gray-400 select-none">
                             <span className={viewMode === 'chat' ? 'text-gray-900 dark:text-white' : ''}>DOR 1.0</span>
                         </div>
                     </div>
@@ -153,6 +218,21 @@ export function DashboardLayout({ user, children }: DashboardLayoutProps) {
                     </div>
                 </div>
             </main>
+
+            {/* Right Panel (Sub Chat) */}
+            <aside
+                className={`${isSubChatOpen ? 'w-[350px] border-l' : 'w-0'
+                    } flex-shrink-0 bg-gray-50/80 dark:bg-zinc-900/80 backdrop-blur-xl border-gray-200/50 dark:border-white/5 transition-all duration-300 ease-in-out flex flex-col overflow-hidden relative z-20`}
+            >
+                <div className="h-14 flex items-center px-4 border-b border-gray-200/50 dark:border-white/5 flex-shrink-0">
+                    <h3 className="font-semibold text-gray-900 dark:text-white">Sub Chat</h3>
+                </div>
+                <div className="flex-1 p-4 overflow-y-auto">
+                    <div className="text-center text-sm text-gray-500 dark:text-gray-400 mt-10">
+                        Select a thread to view details or start a side conversation.
+                    </div>
+                </div>
+            </aside>
         </div>
     )
 }
